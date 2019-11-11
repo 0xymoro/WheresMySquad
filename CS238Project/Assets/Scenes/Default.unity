@@ -939,6 +939,7 @@ GameObject:
   - component: {fileID: 1791786750}
   - component: {fileID: 1791786751}
   - component: {fileID: 1791786752}
+  - component: {fileID: 1791786753}
   m_Layer: 0
   m_Name: Agent0
   m_TagString: Untagged
@@ -1062,3 +1063,17 @@ MonoBehaviour:
   num_particles: 100
   particlePrefab: {fileID: 6210969440291135979, guid: 21108e447d95cb8429ed19c9073801ab,
     type: 3}
+--- !u!114 &1791786753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1791786745}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28a50fdf4b79c214aaf56c813b852ced, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lidar_precision_degrees: 20
+  lidar_max_distance: 5

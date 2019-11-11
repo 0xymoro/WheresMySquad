@@ -18,6 +18,7 @@ public class ParticleFilter : MonoBehaviour
     public GameObject particlePrefab;
     private GameObject[] _beliefStates;
     private GameObject _particleParent;
+    private float _lidar_precision_radians;
 
     // Lidar
     private Lidar _lidar_script;
@@ -30,6 +31,7 @@ public class ParticleFilter : MonoBehaviour
 
         // Get Lidar script
         _lidar_script = GetComponent<Lidar>();
+        _lidar_precision_radians = _lidar_script.GetLidarPrecisionRadians();
 
         // Initialize particles
         _beliefStates = new GameObject[num_particles];
@@ -55,8 +57,8 @@ public class ParticleFilter : MonoBehaviour
     // Update belief state with new particles
     void UpdateBelief() {
         // Get observation from Lidar
-        float testVar = _lidar_script.getTestObservation();
-        Debug.Log(testVar);
+        float[] agent_obseration = _lidar_script.GetDistanceObservation();
+        
         
     }
 }

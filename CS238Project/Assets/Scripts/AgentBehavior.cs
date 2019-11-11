@@ -5,11 +5,9 @@ using UnityEngine;
 
 public class AgentBehavior : MonoBehaviour
 {
-    const int SEED = 1337;
-    const int UPDATE_FREQ = 30;
-    const float FORCE_UPDATE_MAG = 30f;
-
-
+    private const int SEED = 1337;
+    private const int UPDATE_FREQ = 30;
+    private const float FORCE_UPDATE_MAG = 30f;
 
     int updateCounter = 0;
 
@@ -30,8 +28,6 @@ public class AgentBehavior : MonoBehaviour
             GetComponent<Rigidbody>().AddForce(new Vector2(noiseX, noiseY));
 
         }
-
         updateCounter++;
-
     }
 }
