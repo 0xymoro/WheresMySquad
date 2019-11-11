@@ -17,6 +17,7 @@ public class ParticleFilter : MonoBehaviour
     public int num_particles = 100;
     public GameObject particlePrefab;
     private GameObject[] _beliefStates;
+    private GameObject _particleParent;
 
     // Lidar
     private Lidar _lidar_script;
@@ -32,11 +33,14 @@ public class ParticleFilter : MonoBehaviour
 
         // Initialize particles
         _beliefStates = new GameObject[num_particles];
+        _particleParent = new GameObject();
+        _particleParent.name = gameObject.name + "_particleParent";
         for (int i = 0; i < num_particles; i++) {
             //Uniformly sample particles in the world
             float x = Random.Range(X_LEFT_BOUND, X_RIGHT_BOUND);
             float y = Random.Range(Y_LOWER_BOUND, Y_UPPER_BOUND);
             GameObject particle = Instantiate(particlePrefab, new Vector3(x, y, -2), Quaternion.identity);
+            particle.transform.SetParent(_particleParent.transform);
             _beliefStates[i] = particle;
         }
         
