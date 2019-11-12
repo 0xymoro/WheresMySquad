@@ -26,7 +26,6 @@ public class AgentBehavior : MonoBehaviour
             float noiseX = Random.Range(-FORCE_UPDATE_MAG, FORCE_UPDATE_MAG);
             float noiseY = Random.Range(-FORCE_UPDATE_MAG, FORCE_UPDATE_MAG);
             GetComponent<Rigidbody>().AddForce(new Vector2(noiseX, noiseY));
-
         }
         updateCounter++;
     }
