@@ -22,6 +22,8 @@ public class ParticleFilter : MonoBehaviour
     private GameObject[] _beliefStates;
     private GameObject _particleParent;
     private float _lidar_precision_radians;
+    static float NOISE_MEAN = 0f;
+    static float NOISE_STD = 0.1f;
 
     // Current state of the agent
     private Vector3 _agentPosition;
@@ -105,7 +107,9 @@ public class ParticleFilter : MonoBehaviour
         // Resample using the weights and update the belief
         for (int i = 0; i < _beliefStates.Length; i++) {
             int randomIndex = WeightedRandomIndex(ref weights);
-            _beliefStates[i].transform.position = sampledPositions[randomIndex];
+            //Vector3 noise = new Vector3(Random.Range(-NOISE_BOUND, NOISE_BOUND), Random.Range(-NOISE_BOUND, NOISE_BOUND), 0);
+            Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
+            _beliefStates[i].transform.position = sampledPositions[randomIndex] + noise;
         }
     }
 
@@ -140,4 +144,19 @@ public class ParticleFilter : MonoBehaviour
         // Placeholding return statement, should never be reached
         return -1;
     }
+
+
+    //Sample from normal
+    float SampleNormal(float mean, float stdDev)
+    {
+        float u1 = 1.0f-Random.Range(0.0f, 1.0f); //uniform(0,1] random doubles
+        float u2 = 1.0f-Random.Range(0.0f, 1.0f);
+        float randStdNormal = Mathf.Sqrt(-2.0f * Mathf.Log(u1)) *
+             Mathf.Sin(2.0f * Mathf.PI * u2); //random normal(0,1)
+        float randNormal =
+             mean + stdDev * randStdNormal; //random normal(mean,stdDev^2)
+        return randNormal;
+    }
+
+
 }
