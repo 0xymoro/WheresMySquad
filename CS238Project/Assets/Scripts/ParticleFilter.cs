@@ -10,10 +10,10 @@ public class ParticleFilter : MonoBehaviour
     int updateCounter = 0;
 
     // World boundary
-    static float X_LEFT_BOUND = -10.0f;
-    static float X_RIGHT_BOUND = 10.0f;
-    static float Y_LOWER_BOUND = -5.0f;
-    static float Y_UPPER_BOUND = 5.0f;
+    static float X_LEFT_BOUND = -20.0f;
+    static float X_RIGHT_BOUND = 20.0f;
+    static float Y_LOWER_BOUND = -10.0f;
+    static float Y_UPPER_BOUND = 10.0f;
 
     // Particle properties
     public int num_particles = 100;
