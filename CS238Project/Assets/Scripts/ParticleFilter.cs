@@ -15,14 +15,17 @@ public class ParticleFilter : MonoBehaviour
     static float Y_LENGTH;
 
     // Particle properties
-    static int NUM_PARTICLES;
     public float observation_threshold = 1;
     public GameObject particlePrefab;
+    public float upper_confidence_threshold = 0.7f; // Particles are near the agent if its weight is higher than this threshold
+
+    static int NUM_PARTICLES;
     private GameObject[] _beliefStates;
     private GameObject _particleParent;
     private float _lidar_precision_radians;
     static float NOISE_MEAN = 0f;
     static float NOISE_STD = 0.1f;
+    public float noise_multiplier = 10.0f;
 
     // Current state of the agent
     private Vector3 _agentPosition;
@@ -90,6 +93,7 @@ public class ParticleFilter : MonoBehaviour
         float[] weights = new float[_beliefStates.Length];
         Vector3[] sampledPositions = new Vector3[_beliefStates.Length];
 
+        bool has_high_confidence = false;
         // Sample from belief states
         for (int i = 0; i < _beliefStates.Length; i++) {
             int randomParticleIndex = Random.Range(0, _beliefStates.Length);
@@ -100,25 +104,34 @@ public class ParticleFilter : MonoBehaviour
             sampledPositions[i] = newParticlePosition;
             float[] particle_observation = _lidar_script.Scan(newParticlePosition + new Vector3(0, 0, 2));
 
-            // Assume at least 1 ray matched so weight won't ever be 0
-            int numRayMatches = 1;
+            int numRayMatches = 0;
+            int numRayObserved = 0;
             // Compare particle observation with agent observation
             for (int j = 0; j < agent_observation.Length; j++) {
                 // If the observation is positive and within threshold then increment match counts
-                if (Mathf.Abs(agent_observation[j] - particle_observation[j]) < observation_threshold && 
-                    agent_observation[j] > 0 && particle_observation[j] > 0) {
+                if ((agent_observation[j] > 0 && particle_observation[j] > 0 && 
+                    Mathf.Abs(agent_observation[j] - particle_observation[j]) < observation_threshold)) {
                     numRayMatches++;
+                }
+                // Count how many rays are observed
+                if (agent_observation[j] != -1) {
+                    numRayObserved++;
                 }
             }
             // Weight is the percentage of rays that matched between agent and particle observations
-            weights[i] = (float)numRayMatches / agent_observation.Length;
+            weights[i] = (float)(numRayMatches + 1) / (numRayObserved + 1);
+            if (weights[i] > upper_confidence_threshold) {
+                has_high_confidence = true;
+            }
         }
         
+        // If there's at least one particle with high confidence or all particles are low confidence, keep noise level normal. Otherwise increase noise.
+        // Noise is increase when there are observations but none of the particles match the observations.
+        float multiplier = has_high_confidence ? 1 : noise_multiplier;
         // Resample using the weights and update the belief
         for (int i = 0; i < _beliefStates.Length; i++) {
             int randomIndex = WeightedRandomIndex(ref weights);
-            //Vector3 noise = new Vector3(Random.Range(-NOISE_BOUND, NOISE_BOUND), Random.Range(-NOISE_BOUND, NOISE_BOUND), 0);
-            Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
+            Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, multiplier * NOISE_STD), SampleNormal(NOISE_MEAN, multiplier * NOISE_STD), 0);
             _beliefStates[i].transform.position = sampledPositions[randomIndex] + noise;
         }
     }
@@ -159,7 +172,7 @@ public class ParticleFilter : MonoBehaviour
     //Sample from normal
     float SampleNormal(float mean, float stdDev)
     {
-        float u1 = 1.0f-Random.Range(0.0f, 1.0f); //uniform(0,1] random doubles
+        float u1 = 1.0f-Random.Range(0.0f, 0.999f); //uniform[0,0.999] random doubles
         float u2 = 1.0f-Random.Range(0.0f, 1.0f);
         float randStdNormal = Mathf.Sqrt(-2.0f * Mathf.Log(u1)) *
              Mathf.Sin(2.0f * Mathf.PI * u2); //random normal(0,1)
