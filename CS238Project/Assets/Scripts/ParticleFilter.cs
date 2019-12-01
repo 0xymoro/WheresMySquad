@@ -10,13 +10,12 @@ public class ParticleFilter : MonoBehaviour
     int updateCounter = 0;
 
     // World boundary
-    static float X_LEFT_BOUND = -20.0f;
-    static float X_RIGHT_BOUND = 20.0f;
-    static float Y_LOWER_BOUND = -10.0f;
-    static float Y_UPPER_BOUND = 10.0f;
+    public Camera main_camera;
+    static float X_LENGTH;
+    static float Y_LENGTH;
 
     // Particle properties
-    public int num_particles = 100;
+    static int NUM_PARTICLES;
     public float observation_threshold = 1;
     public GameObject particlePrefab;
     private GameObject[] _beliefStates;
@@ -34,6 +33,14 @@ public class ParticleFilter : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Define the world boundary based on camera projection
+        X_LENGTH = 2 * main_camera.orthographicSize * Screen.width / Screen.height;
+        Y_LENGTH = 2 * main_camera.orthographicSize;
+
+        // Number of particles is the amount of particles that can cover the map
+        NUM_PARTICLES = (int)X_LENGTH * (int)Y_LENGTH;
+        Debug.Log("Number of particles: " + NUM_PARTICLES);
+
         // Set random seed
         Random.InitState(SEED);
 
@@ -45,16 +52,18 @@ public class ParticleFilter : MonoBehaviour
         _lidar_precision_radians = _lidar_script.GetLidarPrecisionRadians();
 
         // Initialize particles
-        _beliefStates = new GameObject[num_particles];
+        _beliefStates = new GameObject[NUM_PARTICLES];
         _particleParent = new GameObject();
         _particleParent.name = gameObject.name + "_particleParent";
-        for (int i = 0; i < num_particles; i++) {
-            //Uniformly sample particles in the world
-            float x = Random.Range(X_LEFT_BOUND, X_RIGHT_BOUND);
-            float y = Random.Range(Y_LOWER_BOUND, Y_UPPER_BOUND);
-            GameObject particle = Instantiate(particlePrefab, new Vector3(x, y, -2), Quaternion.identity);
-            particle.transform.SetParent(_particleParent.transform);
-            _beliefStates[i] = particle;
+
+        for (int i = 0; i < (int)X_LENGTH; i++) {
+            for (int j = 0; j < (int)Y_LENGTH; j++) {
+                float x = i - (int)X_LENGTH / 2;
+                float y = j - (int)Y_LENGTH / 2;
+                GameObject particle = Instantiate(particlePrefab, new Vector3(x, y, -2), Quaternion.identity);
+                particle.transform.SetParent(_particleParent.transform);
+                _beliefStates[i + j * (int)X_LENGTH] = particle;
+            }    
         }
     }
 
@@ -87,6 +96,7 @@ public class ParticleFilter : MonoBehaviour
             GameObject randomParticle = _beliefStates[randomParticleIndex];
             // Update the sampled particle's position by taking the action performed by the agent
             Vector3 newParticlePosition = randomParticle.transform.position + action;
+            // sampledPositions[i] = randomParticle.transform.position;
             sampledPositions[i] = newParticlePosition;
             float[] particle_observation = _lidar_script.Scan(newParticlePosition + new Vector3(0, 0, 2), false, false);
 

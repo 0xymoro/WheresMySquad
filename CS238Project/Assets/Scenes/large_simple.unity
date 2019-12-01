@@ -183,7 +183,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: beb593277cd488d469da94ab6284b7c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  num_particles: 1000
+  main_camera: {fileID: 1114965479}
+  num_particles: 800
   observation_threshold: 1
   particlePrefab: {fileID: 6210969440291135979, guid: 21108e447d95cb8429ed19c9073801ab,
     type: 3}
@@ -654,7 +655,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 11.335933
+  orthographic size: 16.831234
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
