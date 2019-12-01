@@ -16,8 +16,9 @@ GameObject:
   - component: {fileID: 6902493840920276626}
   - component: {fileID: 6902493840920276653}
   - component: {fileID: 6902493840920276652}
+  - component: {fileID: 3277783701973421439}
   m_Layer: 8
-  m_Name: Agent0
+  m_Name: Agent
   m_TagString: agents
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -156,3 +157,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lidar_precision_degrees: 20
   lidar_max_distance: 5
+--- !u!114 &3277783701973421439
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6902493840920276655}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5ffb5c8c18e1d44cb230d0c7bedf893, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
