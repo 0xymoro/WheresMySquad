@@ -173,7 +173,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 6.5991263
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -940,7 +940,7 @@ GameObject:
   - component: {fileID: 1791786751}
   - component: {fileID: 1791786752}
   - component: {fileID: 1791786753}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Agent0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1060,9 +1060,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: beb593277cd488d469da94ab6284b7c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  num_particles: 100
+  main_camera: {fileID: 0}
+  observation_threshold: 1
   particlePrefab: {fileID: 6210969440291135979, guid: 21108e447d95cb8429ed19c9073801ab,
     type: 3}
+  upper_confidence_threshold: 0.7
+  noise_multiplier: 10
 --- !u!114 &1791786753
 MonoBehaviour:
   m_ObjectHideFlags: 0

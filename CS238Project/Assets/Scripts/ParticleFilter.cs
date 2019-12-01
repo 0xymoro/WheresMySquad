@@ -136,7 +136,7 @@ public class ParticleFilter : MonoBehaviour
         }
         
         // If there's at least one particle with high confidence or all particles are low confidence, keep noise level normal. Otherwise increase noise.
-        // Noise is increase when there are observations but none of the particles match the observations.
+        // Noise is increased when there are observations but none of the particles match the observations.
         float multiplier = has_high_confidence ? 1 : noise_multiplier;
         // Resample using the weights and update the belief
         for (int i = 0; i < _beliefStates.Length; i++) {
@@ -178,7 +178,6 @@ public class ParticleFilter : MonoBehaviour
         return -1;
     }
 
-
     //Sample from normal
     float SampleNormal(float mean, float stdDev)
     {
@@ -191,5 +190,26 @@ public class ParticleFilter : MonoBehaviour
         return randNormal;
     }
 
+    // Returns true if the agent is considered localized
+    // An agent is considered localized if a percentage of the particles are within range of the agent
+    public bool AgentLocalized()
+    {
+        Evaluation eval = GameObject.Find("Evaluation").GetComponent<Evaluation>();
+        float localizationDistance = eval.GetLocalizationDistance();
+        float localizationPercentage = eval.GetLocalizationPercentage();
 
+        int numLocalizedParticles = 0;
+        // Check if each particle is localized
+        foreach (GameObject particle in _beliefStates) {
+            float dist = Vector3.Distance(particle.transform.position + new Vector3(0, 0, 2), transform.position);
+            if (dist <= localizationDistance) {
+                numLocalizedParticles++;
+            }
+        }
+        // Check the percentage of particles localized
+        if ((float)numLocalizedParticles / _beliefStates.Length >= localizationPercentage) {
+            return true;
+        }
+        return false;
+    }
 }

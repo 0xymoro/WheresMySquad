@@ -136,9 +136,9 @@ GameObject:
   - component: {fileID: 66535647}
   - component: {fileID: 66535646}
   - component: {fileID: 66535645}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Agent0
-  m_TagString: Untagged
+  m_TagString: agents
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -184,10 +184,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   main_camera: {fileID: 1114965479}
-  num_particles: 800
   observation_threshold: 1
   particlePrefab: {fileID: 6210969440291135979, guid: 21108e447d95cb8429ed19c9073801ab,
     type: 3}
+  upper_confidence_threshold: 0.7
+  noise_multiplier: 10
 --- !u!54 &66535647
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -933,6 +934,49 @@ Transform:
   - {fileID: 66535644}
   m_Father: {fileID: 0}
   m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1926635076
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1926635078}
+  - component: {fileID: 1926635077}
+  m_Layer: 0
+  m_Name: Evaluation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1926635077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926635076}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f76a392ff78ffa429b8a9f454ce69a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1926635078
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926635076}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.1164515, y: -2.0159562, z: -103.177124}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2034203252
 GameObject:
