@@ -105,7 +105,8 @@ public class ParticleFilter : MonoBehaviour
             float[] particle_observation = _lidar_script.Scan(newParticlePosition + new Vector3(0, 0, 2));
 
             int numRayMatches = 0;
-            int numRayObserved = 0;
+            int numRayObserved_agent = 0;
+            int numRayObserved_particle = 0;
             // Compare particle observation with agent observation
             for (int j = 0; j < agent_observation.Length; j++) {
                 // If the observation is positive and within threshold then increment match counts
@@ -113,13 +114,22 @@ public class ParticleFilter : MonoBehaviour
                     Mathf.Abs(agent_observation[j] - particle_observation[j]) < observation_threshold)) {
                     numRayMatches++;
                 }
-                // Count how many rays are observed
+                // Count how many rays are observed by the agent
                 if (agent_observation[j] != -1) {
-                    numRayObserved++;
+                    numRayObserved_agent++;
                 }
+                // Count how many rays are observed by the particle
+                if (particle_observation[j] != -1) {
+                    numRayObserved_particle++;
+                }
+
+            }
+            // Heavily pentalize particle weight if the particle observed more than the agent
+            if (numRayObserved_particle > numRayObserved_agent) {
+                numRayObserved_agent = 2 * Mathf.Max(numRayObserved_agent, numRayObserved_particle);
             }
             // Weight is the percentage of rays that matched between agent and particle observations
-            weights[i] = (float)(numRayMatches + 1) / (numRayObserved + 1);
+            weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
             if (weights[i] > upper_confidence_threshold) {
                 has_high_confidence = true;
             }
