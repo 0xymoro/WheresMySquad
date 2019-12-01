@@ -98,7 +98,7 @@ public class ParticleFilter : MonoBehaviour
             Vector3 newParticlePosition = randomParticle.transform.position + action;
             // sampledPositions[i] = randomParticle.transform.position;
             sampledPositions[i] = newParticlePosition;
-            float[] particle_observation = _lidar_script.Scan(newParticlePosition + new Vector3(0, 0, 2), false, false);
+            float[] particle_observation = _lidar_script.Scan(newParticlePosition + new Vector3(0, 0, 2));
 
             // Assume at least 1 ray matched so weight won't ever be 0
             int numRayMatches = 1;

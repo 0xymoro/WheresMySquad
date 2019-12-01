@@ -30,7 +30,7 @@ public class Lidar : MonoBehaviour
     void Update()
     {
         if (updateCounter % UPDATE_FREQ == 0) {
-            _distance_observation = Scan(transform.position);
+            _distance_observation = Scan(transform.position, true, true);
             _lidar_initialized = true;
         }
         updateCounter++;
@@ -39,7 +39,7 @@ public class Lidar : MonoBehaviour
     // Performs one 360 lidar scan of the environment
     // Takes in the origin of the scan
     // Returns an array containing the hit distance for each ray
-    public float[] Scan(Vector3 scanOrigin, bool includeAgents=true, bool displayRays=true)
+    public float[] Scan(Vector3 scanOrigin, bool includeAgents=false, bool displayRays=false)
     {
         // Configure layermask to ignore agents if includeAgents is false, otherwise include everything
         int layermask = ~0;
