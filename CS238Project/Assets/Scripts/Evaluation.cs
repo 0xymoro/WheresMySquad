@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// The performance of the localization algorithm is evaluated based on the time it takes to localize all the agents.
-// Once all the agents are localized, the time is printed.
+// The performance of the localization algorithm is evaluated based on the time it takes to localize all the _agents.
+// Once all the _agents are localized, the time is printed.
 public class Evaluation : MonoBehaviour
 {
     static int UPDATE_FREQ = 5;
     int updateCounter = 0;
     bool allLocalized = false;
     float startTime;
-    GameObject[] agents;
+    GameObject[] _agents;
     // A particle correctly localizes an agent if it's within this distance from the agent
     public float localizationDistance = 1.5f;
     // If at least this percentage of the particles are considered localized then the agent is considered localized
@@ -20,15 +20,15 @@ public class Evaluation : MonoBehaviour
     void Start()
     {
         startTime = Time.time;
-        agents = GameObject.FindGameObjectsWithTag("agents");
-        Debug.Log("Number of agents detected: " + agents.Length);
+        _agents = GameObject.FindGameObjectsWithTag("_agents");
+        Debug.Log("Number of _agents detected: " + _agents.Length);
     }
 
     // Update is called once per frame
     void Update()
     {
         if (updateCounter % UPDATE_FREQ == 0 && !allLocalized) {
-            allLocalized = AllAgentsLocalized();
+            allLocalized = All_agentsLocalized();
             if (allLocalized) {
                 Debug.Log("All localized in: " + (Time.time - startTime) + "s");
             }
@@ -36,11 +36,11 @@ public class Evaluation : MonoBehaviour
         updateCounter++;
     }
 
-    // Returns true if all agents are localized. False otherwise
-    bool AllAgentsLocalized()
+    // Returns true if all _agents are localized. False otherwise
+    bool All_agentsLocalized()
     {
         bool allLocalized = true;
-        foreach (GameObject agent in agents) {
+        foreach (GameObject agent in _agents) {
             bool isLocalied = agent.GetComponent<ParticleFilter>().AgentLocalized();
             allLocalized = allLocalized && isLocalied;
         }

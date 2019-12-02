@@ -17,10 +17,13 @@ public class ParticleFilter : MonoBehaviour
     // Particle properties
     public float observation_threshold = 1;
     public GameObject particlePrefab;
+    public GameObject beliefPositionPrefab;
     public float upper_confidence_threshold = 0.7f; // Particles are near the agent if its weight is higher than this threshold
 
     static int NUM_PARTICLES;
     private GameObject[] _beliefStates;
+    private float[] _weights;
+    private GameObject _beliefPosition;
     private GameObject _particleParent;
     private float _lidar_precision_radians;
     static float NOISE_MEAN = 0f;
@@ -68,6 +71,9 @@ public class ParticleFilter : MonoBehaviour
                 _beliefStates[i + j * (int)X_LENGTH] = particle;
             }    
         }
+
+        // Create belief position
+        _beliefPosition = Instantiate(beliefPositionPrefab, new Vector3(0, 0, -2), Quaternion.identity);
     }
 
     // Update is called once per frame
@@ -79,6 +85,7 @@ public class ParticleFilter : MonoBehaviour
      
         if (updateCounter % UPDATE_FREQ == 0) {
             UpdateBelief();
+            _beliefPosition.transform.position = GetBeliefAgentPosition();
         }
         updateCounter++;
     }
@@ -89,8 +96,8 @@ public class ParticleFilter : MonoBehaviour
         float[] agent_observation = _lidar_script.GetDistanceObservation();
         Vector3 action = GetAction();
         
-        // Create weights for each sampled particle
-        float[] weights = new float[_beliefStates.Length];
+        // Create _weights for each sampled particle
+        _weights = new float[_beliefStates.Length];
         Vector3[] sampledPositions = new Vector3[_beliefStates.Length];
 
         bool has_high_confidence = false;
@@ -129,8 +136,8 @@ public class ParticleFilter : MonoBehaviour
                 numRayObserved_agent = 2 * Mathf.Max(numRayObserved_agent, numRayObserved_particle);
             }
             // Weight is the percentage of rays that matched between agent and particle observations
-            weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
-            if (weights[i] > upper_confidence_threshold) {
+            _weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
+            if (_weights[i] > upper_confidence_threshold) {
                 has_high_confidence = true;
             }
         }
@@ -138,9 +145,9 @@ public class ParticleFilter : MonoBehaviour
         // If there's at least one particle with high confidence or all particles are low confidence, keep noise level normal. Otherwise increase noise.
         // Noise is increased when there are observations but none of the particles match the observations.
         float multiplier = has_high_confidence ? 1 : noise_multiplier;
-        // Resample using the weights and update the belief
+        // Resample using the _weights and update the belief
         for (int i = 0; i < _beliefStates.Length; i++) {
-            int randomIndex = WeightedRandomIndex(ref weights);
+            int randomIndex = WeightedRandomIndex(ref _weights);
             Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, multiplier * NOISE_STD), SampleNormal(NOISE_MEAN, multiplier * NOISE_STD), 0);
             _beliefStates[i].transform.position = sampledPositions[randomIndex] + noise;
         }
@@ -158,18 +165,18 @@ public class ParticleFilter : MonoBehaviour
         return action;
     }
 
-    // Takes in an array of floats containing weights
-    // Return a random index with the probability given by weights
-    int WeightedRandomIndex(ref float[] weights)
+    // Takes in an array of floats containing _weights
+    // Return a random index with the probability given by _weights
+    int WeightedRandomIndex(ref float[] _weights)
     {
         float totalWeight = 0;
-        foreach (float weight in weights) {
+        foreach (float weight in _weights) {
             totalWeight += weight;
         }
         float randomWeight = Random.Range(0, totalWeight);
         float currentWeight = 0;
-        for (int i = 0; i < weights.Length; i++) {
-            currentWeight += weights[i];
+        for (int i = 0; i < _weights.Length; i++) {
+            currentWeight += _weights[i];
             if (randomWeight <= currentWeight) {
                 return i;
             }
@@ -189,6 +196,33 @@ public class ParticleFilter : MonoBehaviour
              mean + stdDev * randStdNormal; //random normal(mean,stdDev^2)
         return randNormal;
     }
+
+    // Returns where the agent believes it's at.
+    public Vector3 GetBeliefAgentPosition()
+    {
+        Vector3 beliefPosition = new Vector3(0, 0, 0);
+        float totalWeight = 0;
+        for (int i = 0; i < _beliefStates.Length; i++) {
+            Vector3 particlePosition = _beliefStates[i].transform.position;
+            float particleWeight = _weights[i];
+            beliefPosition += particlePosition * particleWeight;
+            totalWeight += particleWeight;
+        }
+        beliefPosition /= totalWeight;
+        return beliefPosition;
+    }
+    // public Vector3 GetBeliefAgentPosition()
+    // {
+    //     int highestIndex = 0;
+    //     float highestWeight = 0;
+    //     for (int i = 0; i < _beliefStates.Length; i++) {
+    //         if (_weights[i] > highestWeight) {
+    //             highestWeight = _weights[i];
+    //             highestIndex = i;
+    //         }
+    //     }
+    //     return _beliefStates[highestIndex].transform.position;
+    // }
 
     // Returns true if the agent is considered localized
     // An agent is considered localized if a percentage of the particles are within range of the agent

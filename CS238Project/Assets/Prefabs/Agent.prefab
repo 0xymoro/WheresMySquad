@@ -141,6 +141,8 @@ MonoBehaviour:
   observation_threshold: 1
   particlePrefab: {fileID: 6210969440291135979, guid: 21108e447d95cb8429ed19c9073801ab,
     type: 3}
+  beliefPositionPrefab: {fileID: 8604843692414331290, guid: 68d1afbb6a47f5248b056820ef507b3d,
+    type: 3}
   upper_confidence_threshold: 0.7
   noise_multiplier: 10
 --- !u!114 &6902493840920276652
