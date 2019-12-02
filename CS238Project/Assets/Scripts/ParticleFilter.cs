@@ -28,7 +28,7 @@ public class ParticleFilter : MonoBehaviour
     private float _lidar_precision_radians;
     static float NOISE_MEAN = 0f;
     static float NOISE_STD = 0.1f;
-    public float noise_multiplier = 200.0f;
+    public float noise_multiplier = 10.0f;
 
     // Current state of the agent
     private Vector3 _agentPosition;
@@ -40,8 +40,6 @@ public class ParticleFilter : MonoBehaviour
     // Other agent variables
     const float RADIO_RANGE = 10f;
     GameObject[] _agents;
-
-    const float MULTI_AGENT_BONUS_MULTIPLIER = 200f;
 
     // Start is called before the first frame update
     void Start()
@@ -149,15 +147,11 @@ public class ParticleFilter : MonoBehaviour
                 numRayObserved_agent = 2 * Mathf.Max(numRayObserved_agent, numRayObserved_particle);
             }
             // Weight is the percentage of rays that matched between agent and particle observations
-            _weights[i] = 0.01f; //TESTING PURPOSES/////////////
-            //_weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
+            _weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
             if (_weights[i] > upper_confidence_threshold) {
                 has_high_confidence = true;
             }
         }
-        
-        //Update new weights with information from other agents
-        MultiAgentWeightUpdate(action);
 
 
         // If there's at least one particle with high confidence or all particles are low confidence, keep noise level normal. Otherwise increase noise.
@@ -169,6 +163,11 @@ public class ParticleFilter : MonoBehaviour
             Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, multiplier * NOISE_STD), SampleNormal(NOISE_MEAN, multiplier * NOISE_STD), 0);
             _beliefStates[i].transform.position = sampledPositions[randomIndex] + noise;
         }
+
+        //Update beliefs with information from other agents
+        MultiAgentUpdate();
+
+
     }
 
     // Returns the action that was taken to get from the previous state(position) to the current state
@@ -267,8 +266,20 @@ public class ParticleFilter : MonoBehaviour
 
 
     // Updates agent's weights 
-    public void MultiAgentWeightUpdate(Vector3 action)
+    public void MultiAgentUpdate()
     {
+        // Get list of low weight particles that will be shifted
+        ArrayList lowWeightParticles = new ArrayList();
+        for (int i = 0; i < _beliefStates.Length; i++) {
+            // Pick particles for multi-agent update - by low weight and also by fixed selection
+            if (_weights[i] < 0.2f || i%5==0) {
+                lowWeightParticles.Add(_beliefStates[i]);
+            }
+        }
+
+        // Count neighbors
+        int neighborCount = 0;
+        ArrayList neighbors = new ArrayList();
         foreach (GameObject agent in _agents) {
             // Check against self
             if (agent == gameObject) {
@@ -278,30 +289,44 @@ public class ParticleFilter : MonoBehaviour
             float distance = Vector3.Distance(transform.position, agent.transform.position);
             if (distance < RADIO_RANGE)
             {
-                // Now we can update our agent's weights and cooperatively localize
-                Vector3 otherBeliefPosition = agent.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
-                UpdateWeightsFromOtherAgent(distance, otherBeliefPosition, action, agent);
+                neighbors.Add(agent);
+                neighborCount++;
             }
+        }
+
+        if (neighborCount == 0) return;
+
+        // Partition low weight particles into |neighborCount| items in 2D list
+        ArrayList[] particlesForEachNeighbor = new ArrayList[neighborCount];
+        for (int i = 0; i < neighborCount; i++)
+        {
+            particlesForEachNeighbor[i] = new ArrayList();
+        }
+
+        for (int particleIdx = 0; particleIdx < lowWeightParticles.Count; particleIdx++) {
+            int whichNeighbor = particleIdx % neighborCount;
+            particlesForEachNeighbor[whichNeighbor].Add(lowWeightParticles[particleIdx]);
+        }
+
+
+        // Update the particles
+        for (int i = 0; i < neighbors.Count; i++) { 
+            GameObject neighbor = (GameObject)neighbors[i];
+            ArrayList particles = particlesForEachNeighbor[i];
+            float distance = Vector3.Distance(transform.position, neighbor.transform.position);
+            Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+            Vector3 direction = Vector3.Normalize(neighbor.transform.position - transform.position);
+            UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles, direction);
         }
     }
 
-    public void UpdateWeightsFromOtherAgent(float distance, Vector3 otherBeliefPosition, Vector3 action, GameObject agent)
+    //Get some particles with small weights, and shift them based on distance readings from other agents
+    public void UpdateParticlesUsingOtherAgent(float distance, Vector3 otherBeliefPosition, ArrayList particles, Vector3 direction)
     {
-        for (int i = 0; i < _beliefStates.Length; i++) {
-            //float particleDist = Vector3.Distance(otherBeliefPosition, _beliefStates[i].transform.position + action);
-            float particleDist = Vector3.Distance(agent.transform.position, _beliefStates[i].transform.position + action);
-            float diff = Mathf.Abs(distance - particleDist);
-            //Debug.LogWarning(diff);
-            if (diff < RADIO_RANGE) //Only add bonus weight if diff is reasonable
-            {
-                //Debug.LogWarning("GETTING HERE");
-                // Bonus: multiplier * a raw bonus that is capped at 1.  Overall cap is the value of the multiplier.  
-                _weights[i] += MULTI_AGENT_BONUS_MULTIPLIER * (RADIO_RANGE-diff)/RADIO_RANGE;
-                if (diff < 2)
-                {
-                    //Debug.LogWarning(_weights[i]);
-                }
-            }
+        foreach (GameObject particle in particles) {
+            Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
+            Vector3 particleLocation = otherBeliefPosition - direction*distance + noise;
+            particle.transform.position = particleLocation;
         }
     }
 
