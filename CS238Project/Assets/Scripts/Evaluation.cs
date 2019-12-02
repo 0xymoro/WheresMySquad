@@ -20,7 +20,7 @@ public class Evaluation : MonoBehaviour
     void Start()
     {
         startTime = Time.time;
-        _agents = GameObject.FindGameObjectsWithTag("_agents");
+        _agents = GameObject.FindGameObjectsWithTag("agents");
         Debug.Log("Number of _agents detected: " + _agents.Length);
     }
 

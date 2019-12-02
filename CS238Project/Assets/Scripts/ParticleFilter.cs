@@ -28,13 +28,20 @@ public class ParticleFilter : MonoBehaviour
     private float _lidar_precision_radians;
     static float NOISE_MEAN = 0f;
     static float NOISE_STD = 0.1f;
-    public float noise_multiplier = 10.0f;
+    public float noise_multiplier = 200.0f;
 
     // Current state of the agent
     private Vector3 _agentPosition;
 
     // Lidar
     private Lidar _lidar_script;
+
+
+    // Other agent variables
+    const float RADIO_RANGE = 10f;
+    GameObject[] _agents;
+
+    const float MULTI_AGENT_BONUS_MULTIPLIER = 200f;
 
     // Start is called before the first frame update
     void Start()
@@ -59,6 +66,7 @@ public class ParticleFilter : MonoBehaviour
 
         // Initialize particles
         _beliefStates = new GameObject[NUM_PARTICLES];
+        _weights = new float[NUM_PARTICLES];
         _particleParent = new GameObject();
         _particleParent.name = gameObject.name + "_particleParent";
 
@@ -69,12 +77,17 @@ public class ParticleFilter : MonoBehaviour
                 GameObject particle = Instantiate(particlePrefab, new Vector3(x, y, -2), Quaternion.identity);
                 particle.transform.SetParent(_particleParent.transform);
                 _beliefStates[i + j * (int)X_LENGTH] = particle;
+                _weights[i + j * (int)X_LENGTH] = 0.01f;
             }    
         }
 
         // Create belief position
         _beliefPosition = Instantiate(beliefPositionPrefab, new Vector3(0, 0, -2), Quaternion.identity);
+        
+        // Find other agents for cooperative localization
+        _agents = GameObject.FindGameObjectsWithTag("agents");
     }
+
 
     // Update is called once per frame
     void Update()
@@ -136,12 +149,17 @@ public class ParticleFilter : MonoBehaviour
                 numRayObserved_agent = 2 * Mathf.Max(numRayObserved_agent, numRayObserved_particle);
             }
             // Weight is the percentage of rays that matched between agent and particle observations
-            _weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
+            _weights[i] = 0.01f; //TESTING PURPOSES/////////////
+            //_weights[i] = (float)(numRayMatches + 1) / (numRayObserved_agent + 1);
             if (_weights[i] > upper_confidence_threshold) {
                 has_high_confidence = true;
             }
         }
         
+        //Update new weights with information from other agents
+        MultiAgentWeightUpdate(action);
+
+
         // If there's at least one particle with high confidence or all particles are low confidence, keep noise level normal. Otherwise increase noise.
         // Noise is increased when there are observations but none of the particles match the observations.
         float multiplier = has_high_confidence ? 1 : noise_multiplier;
@@ -246,4 +264,46 @@ public class ParticleFilter : MonoBehaviour
         }
         return false;
     }
+
+
+    // Updates agent's weights 
+    public void MultiAgentWeightUpdate(Vector3 action)
+    {
+        foreach (GameObject agent in _agents) {
+            // Check against self
+            if (agent == gameObject) {
+                continue;
+            }
+            // Distance is given noiseless - radio simulation
+            float distance = Vector3.Distance(transform.position, agent.transform.position);
+            if (distance < RADIO_RANGE)
+            {
+                // Now we can update our agent's weights and cooperatively localize
+                Vector3 otherBeliefPosition = agent.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+                UpdateWeightsFromOtherAgent(distance, otherBeliefPosition, action, agent);
+            }
+        }
+    }
+
+    public void UpdateWeightsFromOtherAgent(float distance, Vector3 otherBeliefPosition, Vector3 action, GameObject agent)
+    {
+        for (int i = 0; i < _beliefStates.Length; i++) {
+            //float particleDist = Vector3.Distance(otherBeliefPosition, _beliefStates[i].transform.position + action);
+            float particleDist = Vector3.Distance(agent.transform.position, _beliefStates[i].transform.position + action);
+            float diff = Mathf.Abs(distance - particleDist);
+            //Debug.LogWarning(diff);
+            if (diff < RADIO_RANGE) //Only add bonus weight if diff is reasonable
+            {
+                //Debug.LogWarning("GETTING HERE");
+                // Bonus: multiplier * a raw bonus that is capped at 1.  Overall cap is the value of the multiplier.  
+                _weights[i] += MULTI_AGENT_BONUS_MULTIPLIER * (RADIO_RANGE-diff)/RADIO_RANGE;
+                if (diff < 2)
+                {
+                    //Debug.LogWarning(_weights[i]);
+                }
+            }
+        }
+    }
+
+
 }
