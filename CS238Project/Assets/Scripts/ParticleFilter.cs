@@ -272,7 +272,7 @@ public class ParticleFilter : MonoBehaviour
         ArrayList lowWeightParticles = new ArrayList();
         for (int i = 0; i < _beliefStates.Length; i++) {
             // Pick particles for multi-agent update - by low weight and also by fixed selection
-            if (_weights[i] < 0.2f || i%5==0) {
+            if (i % 10 == 0) {//_weights[i] < 0.7f) { // || i%10==0) {
                 lowWeightParticles.Add(_beliefStates[i]);
             }
         }
@@ -317,6 +317,8 @@ public class ParticleFilter : MonoBehaviour
             Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
             Vector3 direction = Vector3.Normalize(neighbor.transform.position - transform.position);
             UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles, direction);
+            //UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
+
         }
     }
 
@@ -324,8 +326,9 @@ public class ParticleFilter : MonoBehaviour
     public void UpdateParticlesUsingOtherAgent(float distance, Vector3 otherBeliefPosition, ArrayList particles, Vector3 direction)
     {
         foreach (GameObject particle in particles) {
-            Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
-            Vector3 particleLocation = otherBeliefPosition - direction*distance + noise;
+            //Vector3 direction = Random.insideUnitCircle * distance;
+            //Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
+            Vector3 particleLocation = otherBeliefPosition - direction*distance;// + noise;
             particle.transform.position = particleLocation;
         }
     }
