@@ -40,6 +40,7 @@ public class ParticleFilter : MonoBehaviour
     // Other agent variables
     const float RADIO_RANGE = 5f;
     GameObject[] _agents;
+    const float MULTI_AGENT_THRESHOLD = 0.3f; // if confidence < threshold, reposition particle based on other agent
 
     // Start is called before the first frame update
     void Start()
@@ -81,7 +82,9 @@ public class ParticleFilter : MonoBehaviour
 
         // Create belief position
         _beliefPosition = Instantiate(beliefPositionPrefab, new Vector3(0, 0, -2), Quaternion.identity);
-        
+        _beliefPosition.GetComponent<Renderer>().materials = GetComponent<Renderer>().materials;
+
+
         // Find other agents for cooperative localization
         _agents = GameObject.FindGameObjectsWithTag("agents");
     }
@@ -228,18 +231,6 @@ public class ParticleFilter : MonoBehaviour
         beliefPosition /= totalWeight;
         return beliefPosition;
     }
-    // public Vector3 GetBeliefAgentPosition()
-    // {
-    //     int highestIndex = 0;
-    //     float highestWeight = 0;
-    //     for (int i = 0; i < _beliefStates.Length; i++) {
-    //         if (_weights[i] > highestWeight) {
-    //             highestWeight = _weights[i];
-    //             highestIndex = i;
-    //         }
-    //     }
-    //     return _beliefStates[highestIndex].transform.position;
-    // }
 
     // Returns true if the agent is considered localized
     // An agent is considered localized if a percentage of the particles are within range of the agent
@@ -271,9 +262,8 @@ public class ParticleFilter : MonoBehaviour
         // Get list of low weight particles that will be shifted
         ArrayList lowWeightParticles = new ArrayList();
         for (int i = 0; i < _beliefStates.Length; i++) {
-            // Pick particles for multi-agent update - by low weight and also by fixed selection
-            //if (i % 10 == 0) {//_weights[i] < 0.7f) { // || i%10==0) {
-            if (_weights[i] < 0.3f) {
+            // Pick particles for multi-agent update - by low weight
+            if (_weights[i] < MULTI_AGENT_THRESHOLD) {
                 lowWeightParticles.Add(_beliefStates[i]);
             }
         }
@@ -316,8 +306,6 @@ public class ParticleFilter : MonoBehaviour
             ArrayList particles = particlesForEachNeighbor[i];
             float distance = Vector3.Distance(transform.position, neighbor.transform.position);
             Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
-            //Vector3 direction = Vector3.Normalize(neighbor.transform.position - transform.position);
-            //UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles, direction);
             UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
 
         }
@@ -328,8 +316,7 @@ public class ParticleFilter : MonoBehaviour
     {
         foreach (GameObject particle in particles) {
             Vector3 direction = Vector3.Normalize(Random.insideUnitCircle);
-            //Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
-            Vector3 particleLocation = otherBeliefPosition + direction * distance;// + noise;
+            Vector3 particleLocation = otherBeliefPosition + direction * distance;
             particle.transform.position = particleLocation;
         }
     }

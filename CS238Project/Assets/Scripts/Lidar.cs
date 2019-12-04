@@ -15,7 +15,7 @@ public class Lidar : MonoBehaviour
     private bool _lidar_initialized = false;
 
     // The frequence at which scans are performed
-    static int UPDATE_FREQ = 5;
+    static int UPDATE_FREQ = 10;
     int updateCounter = 0;
 
     // Start is called before the first frame update
