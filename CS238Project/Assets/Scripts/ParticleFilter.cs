@@ -38,7 +38,7 @@ public class ParticleFilter : MonoBehaviour
 
 
     // Other agent variables
-    const float RADIO_RANGE = 5f;
+    const float RADIO_RANGE = 6f;
     GameObject[] _agents;
     const float MULTI_AGENT_THRESHOLD = 0.3f; // if confidence < threshold, reposition particle based on other agent
 
@@ -299,14 +299,61 @@ public class ParticleFilter : MonoBehaviour
             particlesForEachNeighbor[whichNeighbor].Add(lowWeightParticles[particleIdx]);
         }
 
+        if (neighborCount != 2) {
+            // Update the particles
+            for (int i = 0; i < neighbors.Count; i++) { 
+                GameObject neighbor = (GameObject)neighbors[i];
+                ArrayList particles = particlesForEachNeighbor[i];
+                float distance = Vector3.Distance(transform.position, neighbor.transform.position);
+                Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+                UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
 
-        // Update the particles
-        for (int i = 0; i < neighbors.Count; i++) { 
-            GameObject neighbor = (GameObject)neighbors[i];
-            ArrayList particles = particlesForEachNeighbor[i];
-            float distance = Vector3.Distance(transform.position, neighbor.transform.position);
-            Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
-            UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
+            }
+        }
+        else {
+            float x1 = ((GameObject)neighbors[0]).transform.position[0];
+            float y1 = ((GameObject)neighbors[0]).transform.position[1];
+            float r1 = Vector3.Distance(((GameObject)neighbors[0]).GetComponent<ParticleFilter>().GetBeliefAgentPosition(), transform.position);
+
+            float x2 = ((GameObject)neighbors[1]).transform.position[0];
+            float y2 = ((GameObject)neighbors[1]).transform.position[1];
+            float r2 = Vector3.Distance(((GameObject)neighbors[1]).GetComponent<ParticleFilter>().GetBeliefAgentPosition(), transform.position);
+            
+            float centerdx = x1 - x2;
+            float centerdy = y1 - y2;
+            var R = Mathf.Sqrt(centerdx * centerdx + centerdy * centerdy);
+            if (!(Mathf.Abs(r1 - r2) <= R && R <= r1 + r2)) { // no intersection
+                return; // empty list of results
+            }
+            // intersection(s) should exist
+
+            float R2 = R*R;
+            float R4 = R2*R2;
+            float a = (r1*r1 - r2*r2) / (2 * R2);
+            float r2r2 = (r1*r1 - r2*r2);
+            float c = Mathf.Sqrt(2 * (r1*r1 + r2*r2) / R2 - (r2r2 * r2r2) / R4 - 1);
+
+            float fx = (x1+x2) / 2 + a * (x2 - x1);
+            float gx = c * (y2 - y1) / 2;
+            float ix1 = fx + gx;
+            float ix2 = fx - gx;
+
+            float fy = (y1+y2) / 2 + a * (y2 - y1);
+            float gy = c * (x1 - x2) / 2;
+            float iy1 = fy + gy;
+            float iy2 = fy - gy;
+
+            // note if gy == 0 and gx == 0 then the circles are tangent and there is only one solution
+            // but that one solution will just be duplicated as the code is currently written
+
+            Debug.LogWarning(ix1);
+            foreach (GameObject particle in particlesForEachNeighbor[1]) {
+                particle.transform.position = new Vector3(ix1, iy1, 0);
+            }
+
+            foreach (GameObject particle in particlesForEachNeighbor[0]) {
+                particle.transform.position = new Vector3(ix2, iy2, 0);
+            }
 
         }
     }
