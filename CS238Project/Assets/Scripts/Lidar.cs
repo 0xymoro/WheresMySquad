@@ -30,7 +30,7 @@ public class Lidar : MonoBehaviour
     void Update()
     {
         if (updateCounter % UPDATE_FREQ == 0) {
-            _distance_observation = Scan(transform.position, true, true);
+            _distance_observation = Scan(transform.position, false, true);
             _lidar_initialized = true;
         }
         updateCounter++;

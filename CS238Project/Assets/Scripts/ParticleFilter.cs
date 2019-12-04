@@ -38,7 +38,7 @@ public class ParticleFilter : MonoBehaviour
 
 
     // Other agent variables
-    const float RADIO_RANGE = 10f;
+    const float RADIO_RANGE = 5f;
     GameObject[] _agents;
 
     // Start is called before the first frame update
@@ -272,7 +272,8 @@ public class ParticleFilter : MonoBehaviour
         ArrayList lowWeightParticles = new ArrayList();
         for (int i = 0; i < _beliefStates.Length; i++) {
             // Pick particles for multi-agent update - by low weight and also by fixed selection
-            if (i % 10 == 0) {//_weights[i] < 0.7f) { // || i%10==0) {
+            //if (i % 10 == 0) {//_weights[i] < 0.7f) { // || i%10==0) {
+            if (_weights[i] < 0.3f) {
                 lowWeightParticles.Add(_beliefStates[i]);
             }
         }
@@ -315,20 +316,20 @@ public class ParticleFilter : MonoBehaviour
             ArrayList particles = particlesForEachNeighbor[i];
             float distance = Vector3.Distance(transform.position, neighbor.transform.position);
             Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
-            Vector3 direction = Vector3.Normalize(neighbor.transform.position - transform.position);
-            UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles, direction);
-            //UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
+            //Vector3 direction = Vector3.Normalize(neighbor.transform.position - transform.position);
+            //UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles, direction);
+            UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
 
         }
     }
 
     //Get some particles with small weights, and shift them based on distance readings from other agents
-    public void UpdateParticlesUsingOtherAgent(float distance, Vector3 otherBeliefPosition, ArrayList particles, Vector3 direction)
+    public void UpdateParticlesUsingOtherAgent(float distance, Vector3 otherBeliefPosition, ArrayList particles)
     {
         foreach (GameObject particle in particles) {
-            //Vector3 direction = Random.insideUnitCircle * distance;
+            Vector3 direction = Vector3.Normalize(Random.insideUnitCircle);
             //Vector3 noise = new Vector3(SampleNormal(NOISE_MEAN, NOISE_STD), SampleNormal(NOISE_MEAN, NOISE_STD), 0);
-            Vector3 particleLocation = otherBeliefPosition - direction*distance;// + noise;
+            Vector3 particleLocation = otherBeliefPosition + direction * distance;// + noise;
             particle.transform.position = particleLocation;
         }
     }
