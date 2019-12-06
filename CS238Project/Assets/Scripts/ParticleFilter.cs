@@ -29,6 +29,7 @@ public class ParticleFilter : MonoBehaviour
     static float NOISE_MEAN = 0f;
     static float NOISE_STD = 0.1f;
     public float noise_multiplier = 10.0f;
+    float cluster_radius = 5.0f;
 
     // Current state of the agent
     private Vector3 _agentPosition;
@@ -217,7 +218,67 @@ public class ParticleFilter : MonoBehaviour
         return randNormal;
     }
 
+    // This struct contains the position of a particle and which cluster it belongs to.
+    // Used for clustering belief particles to determine the belief position
+    struct ParticleCluster {
+        Vector3 position;
+        int clusterNumber;
+    }
+
     // Returns where the agent believes it's at.
+    // public Vector3 GetBeliefAgentPosition()
+    // {
+    //     // Initially all particles are unclustered and are put into the unclustered set
+    //     HashSet<Vector3> unclusteredPoints = new HashSet<Vector3>();
+    //     for (int i = 0; i < _beliefStates.Length; i++) {
+    //         unclusteredPoints.Add(_beliefStates[i].transform.position);
+    //     }
+
+    //     List<Vector3> maxCluster = new List<Vector3>();
+    //     // Computation is only done on unclustered points and eventually all points should be clustered
+    //     // Start with one random unclustered point and add all its neighbors to the cluster then iterate through all the added
+    //     // neighbors and add more points to be cluster if applicable
+    //     while (unclusteredPoints.Count != 0) {
+    //         // Take one unclustered point and put it in a new cluster
+    //         Vector3 startPoint = unclusteredPoints.GetEnumerator().Current;
+    //         unclusteredPoints.Remove(startPoint);
+    //         List<Vector3> cluster = new List<Vector3>();
+    //         cluster.Add(startPoint);
+
+    //         int referenceIndex = 0;
+    //         // Loop through each point in the cluster. 
+    //         // Number of points in the cluster is changed dynamically as more points are found and added
+    //         while (referenceIndex < cluster.Count) {
+    //             // Point in the cluster that all unassigned points are compared to
+    //             Vector3 referencePoint = cluster[referenceIndex];
+    //             // If any unassigned points are within radius of the reference point, that new point is assigned to this cluster
+    //             foreach (Vector3 point in unclusteredPoints) {
+    //                 if (Vector3.Distance(point, referencePoint) <= cluster_radius) {
+    //                     cluster.Add(point);
+    //                 }
+    //             }
+    //             // Remove all the newly clustered points from the set of unclustered points
+    //             for (int i = referenceIndex + 1; i < cluster.Count; i++) {
+    //                 unclusteredPoints.Remove(cluster[i]);
+    //             }
+    //             referenceIndex++;
+    //         }
+    //         // Keep this cluster if it's the biggest cluster found
+    //         if (cluster.Count > maxCluster.Count) {
+    //             maxCluster = cluster;
+    //         }
+    //     }
+        
+    //     // Compute average of all the points in the largest cluster to get the belief position
+    //     Vector3 beliefPosition = new Vector3(0, 0, 0);
+    //     foreach (Vector3 position in maxCluster) {
+    //         beliefPosition += position;
+    //     }
+    //     beliefPosition /= maxCluster.Count;
+    
+    //     return beliefPosition;
+    // }
+
     public Vector3 GetBeliefAgentPosition()
     {
         Vector3 beliefPosition = new Vector3(0, 0, 0);
@@ -260,7 +321,7 @@ public class ParticleFilter : MonoBehaviour
     public void MultiAgentUpdate()
     {
         // Get list of low weight particles that will be shifted
-        ArrayList lowWeightParticles = new ArrayList();
+        List<GameObject> lowWeightParticles = new List<GameObject>();
         for (int i = 0; i < _beliefStates.Length; i++) {
             // Pick particles for multi-agent update - by low weight
             if (_weights[i] < MULTI_AGENT_THRESHOLD) {
@@ -270,7 +331,7 @@ public class ParticleFilter : MonoBehaviour
 
         // Count neighbors
         int neighborCount = 0;
-        ArrayList neighbors = new ArrayList();
+        List<GameObject> neighbors = new List<GameObject>();
         foreach (GameObject agent in _agents) {
             // Check against self
             if (agent == gameObject) {
@@ -285,13 +346,15 @@ public class ParticleFilter : MonoBehaviour
             }
         }
 
-        if (neighborCount == 0) return;
+        if (neighborCount == 0) {
+            return;
+        }
 
         // Partition low weight particles into |neighborCount| items in 2D list
-        ArrayList[] particlesForEachNeighbor = new ArrayList[neighborCount];
+        List<GameObject>[] particlesForEachNeighbor = new List<GameObject>[neighborCount];
         for (int i = 0; i < neighborCount; i++)
         {
-            particlesForEachNeighbor[i] = new ArrayList();
+            particlesForEachNeighbor[i] = new List<GameObject>();
         }
 
         for (int particleIdx = 0; particleIdx < lowWeightParticles.Count; particleIdx++) {
@@ -302,64 +365,34 @@ public class ParticleFilter : MonoBehaviour
         if (neighborCount != 2) {
             // Update the particles
             for (int i = 0; i < neighbors.Count; i++) { 
-                GameObject neighbor = (GameObject)neighbors[i];
-                ArrayList particles = particlesForEachNeighbor[i];
+                GameObject neighbor = neighbors[i];
+                List<GameObject> particles = particlesForEachNeighbor[i];
                 float distance = Vector3.Distance(transform.position, neighbor.transform.position);
                 Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
                 UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
-
             }
-        }
+        } 
         else {
-            float x1 = ((GameObject)neighbors[0]).transform.position[0];
-            float y1 = ((GameObject)neighbors[0]).transform.position[1];
-            float r1 = Vector3.Distance(((GameObject)neighbors[0]).GetComponent<ParticleFilter>().GetBeliefAgentPosition(), transform.position);
-
-            float x2 = ((GameObject)neighbors[1]).transform.position[0];
-            float y2 = ((GameObject)neighbors[1]).transform.position[1];
-            float r2 = Vector3.Distance(((GameObject)neighbors[1]).GetComponent<ParticleFilter>().GetBeliefAgentPosition(), transform.position);
-            
-            float centerdx = x1 - x2;
-            float centerdy = y1 - y2;
-            var R = Mathf.Sqrt(centerdx * centerdx + centerdy * centerdy);
-            if (!(Mathf.Abs(r1 - r2) <= R && R <= r1 + r2)) { // no intersection
-                return; // empty list of results
+            Vector3 beliefPosition1 = neighbors[0].GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+            Vector3 beliefPosition2 = neighbors[1].GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+            float r1 = Vector3.Distance(transform.position, neighbors[0].transform.position);
+            float r2 = Vector3.Distance(transform.position, neighbors[1].transform.position);
+            List<Vector3> intersections = GetCircleIntersection(beliefPosition1, beliefPosition2, r1, r2);
+            Debug.Log(intersections.Count);
+            if (intersections.Count == 2) {
+                foreach (GameObject particle in particlesForEachNeighbor[0]) {
+                    particle.transform.position = intersections[0];
+                }
+                foreach (GameObject particle in particlesForEachNeighbor[1]) {
+                    particle.transform.position = intersections[1];
+                }
             }
-            // intersection(s) should exist
-
-            float R2 = R*R;
-            float R4 = R2*R2;
-            float a = (r1*r1 - r2*r2) / (2 * R2);
-            float r2r2 = (r1*r1 - r2*r2);
-            float c = Mathf.Sqrt(2 * (r1*r1 + r2*r2) / R2 - (r2r2 * r2r2) / R4 - 1);
-
-            float fx = (x1+x2) / 2 + a * (x2 - x1);
-            float gx = c * (y2 - y1) / 2;
-            float ix1 = fx + gx;
-            float ix2 = fx - gx;
-
-            float fy = (y1+y2) / 2 + a * (y2 - y1);
-            float gy = c * (x1 - x2) / 2;
-            float iy1 = fy + gy;
-            float iy2 = fy - gy;
-
-            // note if gy == 0 and gx == 0 then the circles are tangent and there is only one solution
-            // but that one solution will just be duplicated as the code is currently written
-
-            Debug.LogWarning(ix1);
-            foreach (GameObject particle in particlesForEachNeighbor[1]) {
-                particle.transform.position = new Vector3(ix1, iy1, 0);
-            }
-
-            foreach (GameObject particle in particlesForEachNeighbor[0]) {
-                particle.transform.position = new Vector3(ix2, iy2, 0);
-            }
-
         }
+        
     }
 
     //Get some particles with small weights, and shift them based on distance readings from other agents
-    public void UpdateParticlesUsingOtherAgent(float distance, Vector3 otherBeliefPosition, ArrayList particles)
+    public void UpdateParticlesUsingOtherAgent(float distance, Vector3 otherBeliefPosition, List<GameObject> particles)
     {
         foreach (GameObject particle in particles) {
             Vector3 direction = Vector3.Normalize(Random.insideUnitCircle);
@@ -368,5 +401,32 @@ public class ParticleFilter : MonoBehaviour
         }
     }
 
+    List<Vector3> GetCircleIntersection(Vector3 center1, Vector3 center2, float r1, float r2)
+    {
+        // There can be at most two intersections with two circles
+        List<Vector3> intersections = new List<Vector3>();
+        float centersDistance = Vector3.Distance(center1, center2);
+        // No solutions when the two circles don't touch or the two circles are within one another or when they're the same circle
+        if ((centersDistance > r1 + r2) || (centersDistance < Mathf.Abs(r1 - r2)) || centersDistance == 0) {
+            return intersections;
+        }
+
+        // Assume there are two intersections. Draw a line between the intersections and draw another line between the two centers. 
+        // Where theses two lines cross is defined as point p. 
+        // The distance from center 1 to p is distance center1_to_p
+        float center1_to_p = (Mathf.Pow(r1, 2) - Mathf.Pow(r2, 2) + Mathf.Pow(centersDistance, 2)) / (2 * centersDistance);
+        Vector3 p = center1 + center1_to_p * (center2 - center1) / centersDistance;
+        // If the two circles touch at one point, then center1_to_p should be r1
+        if (center1_to_p == r1) {
+            intersections.Add(center1 + p);
+            return intersections;
+        }
+
+        // h is the distance from p to the intersection along the line between the two intersections
+        float h = Mathf.Sqrt(Mathf.Pow(r1, 2) - Mathf.Pow(center1_to_p, 2));
+        intersections.Add(new Vector3(p.x + h * (center2.y - center1.y) / centersDistance, p.y - h * (center2.x - center1.x) / centersDistance, -2));
+        intersections.Add(new Vector3(p.x - h * (center2.y - center1.y) / centersDistance, p.y + h * (center2.x - center1.x) / centersDistance, -2));
+        return intersections;
+    }
 
 }
