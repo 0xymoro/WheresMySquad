@@ -1288,9 +1288,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f76a392ff78ffa429b8a9f454ce69a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _evalTypeIndex: 0
-  localizationDistance: 1.5
-  localizationPercentage: 0.9
+  _evalTypeIndex: 2
+  localizationDistance: 2
+  localizationPercentage: 0.7
 --- !u!4 &1926635078
 Transform:
   m_ObjectHideFlags: 0
