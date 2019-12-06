@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Lidar : MonoBehaviour
 {
+    const int SEED = 0; 
     // The angle between two lidar points
     public float lidar_precision_degrees = 20f;
     // Farthest distance the lidar can reach
@@ -21,6 +22,9 @@ public class Lidar : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // Set random seed
+        Random.InitState(SEED);
+
         _lidar_precision_radians = Mathf.PI * lidar_precision_degrees / 180.0f;
         _num_rays = Mathf.RoundToInt(2 * Mathf.PI / _lidar_precision_radians);
         _distance_observation = new float[_num_rays];

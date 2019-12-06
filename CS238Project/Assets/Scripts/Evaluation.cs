@@ -9,6 +9,9 @@ public class Evaluation : MonoBehaviour
     static int UPDATE_FREQ = 5;
     int updateCounter = 0;
     bool allLocalized = false;
+    bool _evalInitialized = false;
+    public int _evalTypeIndex = 0;
+    string[] _evalType = {"naive", "advanced", "advanced_triangulate"};
     float startTime;
     GameObject[] _agents;
     // A particle correctly localizes an agent if it's within this distance from the agent
@@ -22,6 +25,7 @@ public class Evaluation : MonoBehaviour
         startTime = Time.time;
         _agents = GameObject.FindGameObjectsWithTag("agents");
         Debug.Log("Number of _agents detected: " + _agents.Length);
+        _evalInitialized = true;
     }
 
     // Update is called once per frame
@@ -55,5 +59,17 @@ public class Evaluation : MonoBehaviour
     public float GetLocalizationPercentage()
     {
         return localizationPercentage;
+    }
+
+    // Returns true if evaluation script is initialized
+    public bool EvalScriptInitialized()
+    {
+        return _evalInitialized;
+    }
+
+    // Get the type of algorithm that's being evaluated
+    public string GetEvalType()
+    {
+        return _evalType[_evalTypeIndex];
     }
 }

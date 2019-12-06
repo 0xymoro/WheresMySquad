@@ -5,7 +5,7 @@ using UnityEngine;
 public class ParticleFilter : MonoBehaviour
 {
     // Random seed
-    const int SEED = 1337; 
+    const int SEED = 0; 
     static int UPDATE_FREQ = 5;
     int updateCounter = 0;
 
@@ -43,16 +43,29 @@ public class ParticleFilter : MonoBehaviour
     GameObject[] _agents;
     const float MULTI_AGENT_THRESHOLD = 0.3f; // if confidence < threshold, reposition particle based on other agent
 
+    // Evaluation
+    bool evalTriangulate = true;
+    bool evalAdvanced = true;
+
     // Start is called before the first frame update
     void Start()
     {
+        // Wait for evaluation metrix to initialize first
+        Evaluation evalScript = GameObject.Find("Evaluation").GetComponent<Evaluation>();
+        string evalType = evalScript.GetEvalType();
+        if (evalType == "advanced") {
+            evalAdvanced = true;
+        } else if (evalType == "advanced_triangulate") {
+            evalAdvanced = true;
+            evalTriangulate = true;
+        }
+
         // Define the world boundary based on camera projection
         X_LENGTH = 2 * main_camera.orthographicSize * Screen.width / Screen.height;
         Y_LENGTH = 2 * main_camera.orthographicSize;
 
         // Number of particles is the amount of particles that can cover the map
         NUM_PARTICLES = (int)X_LENGTH * (int)Y_LENGTH;
-        Debug.Log("Number of particles: " + NUM_PARTICLES);
 
         // Set random seed
         Random.InitState(SEED);
@@ -169,9 +182,9 @@ public class ParticleFilter : MonoBehaviour
         }
 
         //Update beliefs with information from other agents
-        MultiAgentUpdate();
-
-
+        if (evalAdvanced) {
+            MultiAgentUpdate();
+        }
     }
 
     // Returns the action that was taken to get from the previous state(position) to the current state
@@ -218,13 +231,8 @@ public class ParticleFilter : MonoBehaviour
         return randNormal;
     }
 
-    // This struct contains the position of a particle and which cluster it belongs to.
-    // Used for clustering belief particles to determine the belief position
-    struct ParticleCluster {
-        Vector3 position;
-        int clusterNumber;
-    }
 
+    // TODO: Too expensive to run
     // Returns where the agent believes it's at.
     // public Vector3 GetBeliefAgentPosition()
     // {
@@ -365,7 +373,7 @@ public class ParticleFilter : MonoBehaviour
         bool hasIntersection = false;
         // Attempt to find intersections of circles to localize
         // Can triangulate with three neighbors
-        if(neighbors.Count > 1) {          
+        if(neighbors.Count > 1 && evalTriangulate) {          
             List<Vector3> intersections = new List<Vector3>();
             // We need two circles to find an intersection. The first circle we pick is the reference circle
             // We will set each neighbor as the reference circle and compare to all other circles until intersections are found
