@@ -29,7 +29,7 @@ public class ParticleFilter : MonoBehaviour
     static float NOISE_MEAN = 0f;
     static float NOISE_STD = 0.1f;
     public float noise_multiplier = 10.0f;
-    float cluster_radius = 5.0f;
+    float cluster_tolerance = 1.0f; // When computing intersection for multiagent, points within this range are considered within the same area
 
     // Current state of the agent
     private Vector3 _agentPosition;
@@ -362,30 +362,69 @@ public class ParticleFilter : MonoBehaviour
             particlesForEachNeighbor[whichNeighbor].Add(lowWeightParticles[particleIdx]);
         }
 
-        if (neighborCount != 2) {
-            // Update the particles
+        bool hasIntersection = false;
+        // Attempt to find intersections of circles to localize
+        // Can triangulate with three neighbors
+        if(neighbors.Count > 1) {          
+            List<Vector3> intersections = new List<Vector3>();
+            // We need two circles to find an intersection. The first circle we pick is the reference circle
+            // We will set each neighbor as the reference circle and compare to all other circles until intersections are found
+            for (int j = 0; j < neighbors.Count && intersections.Count == 0; j++) {
+                Vector3 refBeliefPosition = neighbors[j].GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+                float refRadius = Vector3.Distance(transform.position, neighbors[j].transform.position);
+                // Loop through all other neighbors 
+                for (int i = j + 1; i < neighbors.Count; i++) {
+                    Vector3 beliefPosition = neighbors[i].GetComponent<ParticleFilter>().GetBeliefAgentPosition();
+                    float r = Vector3.Distance(transform.position, neighbors[i].transform.position);
+                    List<Vector3> new_intersections = GetCircleIntersection(refBeliefPosition, beliefPosition, refRadius, r);
+
+                    // If triangulation is successful break out all loops and update particles
+                    bool triangulated = false;
+                    if (intersections.Count == 0) {
+                        // No old intersections exist so set to new one. (Could also be empty)
+                        intersections = new_intersections;
+                    } else {
+                        // Attempt to triangulate
+                        foreach (Vector3 intersection in intersections) {
+                            foreach (Vector3 new_intersection in new_intersections) {
+                                // Triangluate successful
+                                if (Vector3.Distance(intersection, new_intersection) < cluster_tolerance) {
+                                    intersections.Clear();
+                                    intersections.Add(new_intersection);
+                                    triangulated = true;
+                                    break;
+                                } else {
+                                    // Not triangulation, found more independent intersections
+                                    intersections.Add(new_intersection);
+                                }
+                            }
+                            if (triangulated) {
+                                break;
+                            }
+                        }
+                    }
+                    if (triangulated) {
+                        break;
+                    }
+                }
+            }
+            // If intersections are found, only update low weight particles to be at the intersections
+            if (intersections.Count != 0) {
+                hasIntersection = true;
+                for (int i = 0; i < lowWeightParticles.Count; i++) {
+                    GameObject particle = lowWeightParticles[i];
+                    Vector3 position = intersections[i % intersections.Count];
+                    particle.transform.position = position;
+                }
+            } 
+        } else if (!hasIntersection) {
+            // If there are no intersections or there's only one neighbor, draw the circles
             for (int i = 0; i < neighbors.Count; i++) { 
                 GameObject neighbor = neighbors[i];
                 List<GameObject> particles = particlesForEachNeighbor[i];
                 float distance = Vector3.Distance(transform.position, neighbor.transform.position);
                 Vector3 otherBeliefPosition = neighbor.GetComponent<ParticleFilter>().GetBeliefAgentPosition();
                 UpdateParticlesUsingOtherAgent(distance, otherBeliefPosition, particles);
-            }
-        } 
-        else {
-            Vector3 beliefPosition1 = neighbors[0].GetComponent<ParticleFilter>().GetBeliefAgentPosition();
-            Vector3 beliefPosition2 = neighbors[1].GetComponent<ParticleFilter>().GetBeliefAgentPosition();
-            float r1 = Vector3.Distance(transform.position, neighbors[0].transform.position);
-            float r2 = Vector3.Distance(transform.position, neighbors[1].transform.position);
-            List<Vector3> intersections = GetCircleIntersection(beliefPosition1, beliefPosition2, r1, r2);
-            Debug.Log(intersections.Count);
-            if (intersections.Count == 2) {
-                foreach (GameObject particle in particlesForEachNeighbor[0]) {
-                    particle.transform.position = intersections[0];
-                }
-                foreach (GameObject particle in particlesForEachNeighbor[1]) {
-                    particle.transform.position = intersections[1];
-                }
             }
         }
         
