@@ -44,8 +44,8 @@ public class ParticleFilter : MonoBehaviour
     const float MULTI_AGENT_THRESHOLD = 0.3f; // if confidence < threshold, reposition particle based on other agent
 
     // Evaluation
-    bool evalTriangulate = true;
-    bool evalAdvanced = true;
+    bool evalTriangulate = false;
+    bool evalAdvanced = false;
 
     // Start is called before the first frame update
     void Start()
@@ -53,6 +53,7 @@ public class ParticleFilter : MonoBehaviour
         // Wait for evaluation metrix to initialize first
         Evaluation evalScript = GameObject.Find("Evaluation").GetComponent<Evaluation>();
         string evalType = evalScript.GetEvalType();
+        Debug.Log(evalType);
         if (evalType == "advanced") {
             evalAdvanced = true;
         } else if (evalType == "advanced_triangulate") {
@@ -241,12 +242,13 @@ public class ParticleFilter : MonoBehaviour
     //     for (int i = 0; i < _beliefStates.Length; i++) {
     //         unclusteredPoints.Add(_beliefStates[i].transform.position);
     //     }
-
+    // Debug.Log("start");
     //     List<Vector3> maxCluster = new List<Vector3>();
     //     // Computation is only done on unclustered points and eventually all points should be clustered
     //     // Start with one random unclustered point and add all its neighbors to the cluster then iterate through all the added
     //     // neighbors and add more points to be cluster if applicable
     //     while (unclusteredPoints.Count != 0) {
+    //         Debug.Log("first while!");
     //         // Take one unclustered point and put it in a new cluster
     //         Vector3 startPoint = unclusteredPoints.GetEnumerator().Current;
     //         unclusteredPoints.Remove(startPoint);
@@ -257,11 +259,12 @@ public class ParticleFilter : MonoBehaviour
     //         // Loop through each point in the cluster. 
     //         // Number of points in the cluster is changed dynamically as more points are found and added
     //         while (referenceIndex < cluster.Count) {
+    //             Debug.Log("second while!");
     //             // Point in the cluster that all unassigned points are compared to
     //             Vector3 referencePoint = cluster[referenceIndex];
     //             // If any unassigned points are within radius of the reference point, that new point is assigned to this cluster
     //             foreach (Vector3 point in unclusteredPoints) {
-    //                 if (Vector3.Distance(point, referencePoint) <= cluster_radius) {
+    //                 if (Vector3.Distance(point, referencePoint) <= cluster_tolerance) {
     //                     cluster.Add(point);
     //                 }
     //             }
